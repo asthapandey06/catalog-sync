@@ -1,0 +1,32 @@
+services:
+  redis:
+    image: redis:7-alpine
+
+  mock-woo:
+    build: .
+    command: ["node", "dist/mock/wooServer.js"]
+    environment:
+      MOCK_PORT: "4000"
+      MOCK_FAIL_RATE: "0.1"
+    ports: ["4000:4000"]
+
+  api:
+    build: .
+    environment:
+      REDIS_URL: redis://redis:6379
+      WOO_BASE_URL: http://mock-woo:4000
+      WOO_CONSUMER_KEY: ck_demo
+      WOO_CONSUMER_SECRET: cs_demo
+    ports: ["3000:3000"]
+    depends_on: [redis]
+
+  worker:
+    build: .
+    command: ["node", "dist/worker.js"]
+    environment:
+      REDIS_URL: redis://redis:6379
+      WOO_BASE_URL: http://mock-woo:4000
+      WOO_CONSUMER_KEY: ck_demo
+      WOO_CONSUMER_SECRET: cs_demo
+      WORKER_CONCURRENCY: "5"
+    depends_on: [redis, mock-woo]
